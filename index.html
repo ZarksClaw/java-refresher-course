@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Java Refresher Course</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ====== DASHBOARD VIEW ====== -->
+    <div id="dashboard-view" class="view active">
+      <header class="app-header">
+        <div class="header-top">
+          <h1><span class="logo">☕</span> Java Refresher</h1>
+          <button id="reset-btn" class="btn btn-sm btn-outline" title="Reset all progress">Reset</button>
+        </div>
+        <p class="subtitle">Interactive Q&A Course for Java Developers</p>
+        <div class="overall-progress">
+          <div class="progress-track">
+            <div class="progress-fill" id="overall-fill" style="width:0%"></div>
+          </div>
+          <span class="progress-label" id="overall-label">0 / 11 chapters</span>
+        </div>
+      </header>
+      <main>
+        <div id="chapter-grid" class="chapter-grid"></div>
+      </main>
+    </div>
+
+    <!-- ====== CHAPTER VIEW ====== -->
+    <div id="chapter-view" class="view">
+      <header class="chapter-header">
+        <button id="back-btn" class="btn btn-ghost">&larr; Dashboard</button>
+        <div>
+          <h2 id="chapter-title"></h2>
+          <span class="step-indicator" id="step-indicator"></span>
+        </div>
+      </header>
+      <main>
+        <div id="step-content" class="step-content"></div>
+        <div class="nav-bar" id="nav-bar">
+          <button id="prev-btn" class="btn btn-ghost" disabled>&larr; Back</button>
+          <button id="next-btn" class="btn btn-primary">Continue &rarr;</button>
+        </div>
+      </main>
+    </div>
+
+    <!-- ====== QUIZ VIEW ====== -->
+    <div id="quiz-view" class="view">
+      <header class="quiz-header">
+        <button id="quiz-back-btn" class="btn btn-ghost">&larr; Chapter</button>
+        <h2 id="quiz-title"></h2>
+        <span class="quiz-score" id="quiz-score"></span>
+      </header>
+      <main>
+        <div id="quiz-content" class="quiz-content"></div>
+      </main>
+    </div>
+
+  </div>
+
+  <script src="js/chapters.js"></script>
+  <script src="js/tracker.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
