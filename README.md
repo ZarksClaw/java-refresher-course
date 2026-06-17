@@ -1,6 +1,7 @@
 # Java Refresher Course
 
 Interactive Q&A refresher course for Java developers. 11 chapters covering core Java through modern features and Spring Boot. No build tools or dependencies — just open `index.html` in a browser.
+Feel free to join my project and add to it! Thanks!
 
 ## Course Content
 
