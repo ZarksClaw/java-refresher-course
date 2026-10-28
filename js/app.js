@@ -4,6 +4,8 @@ const App = {
 
   init() {
     this.showDashboard();
+    document.getElementById('chapter-search').addEventListener('input', () => this._renderDashboard());
+    document.getElementById('track-filter').addEventListener('change', () => this._renderDashboard());
     document.getElementById('back-btn').addEventListener('click', () => this.showDashboard());
     document.getElementById('quiz-back-btn').addEventListener('click', () => this._goBackFromQuiz());
     document.getElementById('prev-btn').addEventListener('click', () => this._prevStep());
@@ -26,8 +28,14 @@ const App = {
       : `${(progress.completed / progress.total) * 100}%`;
     document.getElementById('overall-label').textContent = `${progress.completed} / ${progress.total} chapters`;
 
+    const query = document.getElementById('chapter-search').value.trim().toLowerCase();
+    const track = document.getElementById('track-filter').value;
+    const chapters = CHAPTERS.filter(ch => (!track || ch.track === track) &&
+      [ch.title, ch.description, ...ch.objectives].join(' ').toLowerCase().includes(query));
+    document.getElementById('course-stats').textContent = `${CHAPTERS.length} chapters · ${CHAPTERS.reduce((sum, ch) => sum + ch.steps.length, 0)} learning steps · ${CHAPTERS.reduce((sum, ch) => sum + ch.quiz.length, 0)} quiz questions · offline-friendly`;
+    document.getElementById('search-status').textContent = `${chapters.length} chapters shown`;
     let html = '';
-    for (const ch of CHAPTERS) {
+    for (const ch of chapters) {
       const status = Tracker.getStatus(ch.id);
       const stepProg = Tracker.getStepProgress(ch.id);
       const quizInfo = Tracker.getQuizInfo(ch.id);
@@ -49,23 +57,24 @@ const App = {
       }
 
       html += `
-        <div class="chapter-card ${status === 'done' ? 'completed' : ''}" data-chapter="${ch.id}">
-          <div class="card-header">
-            <div class="card-number">${ch.id}</div>
-            <div class="card-title">${ch.title}</div>
-          </div>
-          <div class="card-desc">${ch.description}</div>
-          <div class="card-bar">
-            <div class="card-bar-fill" style="width:${stepPct}%;background:${barColor}"></div>
-          </div>
-          <div class="card-footer">
+        <button type="button" class="chapter-card ${status === 'done' ? 'completed' : ''}" data-chapter="${ch.id}">
+          <span class="card-header">
+            <span class="card-number">${ch.id}</span>
+            <span class="card-title">${ch.title}</span>
+          </span>
+          <span class="card-meta">${ch.track} · About ${ch.estimatedMinutes} min</span>
+          <span class="card-desc">${ch.description}</span>
+          <span class="card-bar">
+            <span class="card-bar-fill" style="width:${stepPct}%;background:${barColor}"></span>
+          </span>
+          <span class="card-footer">
             <span class="card-status ${statusClass}">${statusText}</span>
             ${quizInfo.passed ? `<span>Quiz: ${quizInfo.best}/${ch.quiz.length}</span>` : `<span>${stepProg.completed}/${stepProg.total} steps</span>`}
-          </div>
-        </div>
+          </span>
+        </button>
       `;
     }
-    grid.innerHTML = html;
+    grid.innerHTML = html || '<p>No chapters match. Try a different topic or track.</p>';
 
     grid.querySelectorAll('.chapter-card').forEach(card => {
       card.addEventListener('click', () => {
@@ -111,17 +120,33 @@ const App = {
       nextBtn.disabled = false;
     }
 
-    if (this._currentStep >= total - 1 && this._isAllStepsDone()) {
-      nextBtn.textContent = 'Take Knowledge Check →';
-    } else {
-      nextBtn.textContent = 'Continue →';
-    }
+    nextBtn.textContent = this._currentStep === total - 1
+      ? 'Take Knowledge Check →' : 'Continue →';
 
+    this._renderOutline(chapter);
     if (step.type === 'lesson') {
-      container.innerHTML = `<div class="lesson-content">${step.content}</div>`;
+      const goals = this._currentStep === 0 ? `<aside class="learning-goals"><h3>Learning goals</h3><ul>${chapter.objectives.map(goal => `<li>${goal}</li>`).join('')}</ul></aside>` : '';
+      const reference = chapter.reference ? `<p class="reference">Read more: <a href="${chapter.reference[1]}" target="_blank" rel="noopener noreferrer">${chapter.reference[0]}</a></p>` : '';
+      container.innerHTML = `${goals}<div class="lesson-content">${step.content}${reference}</div>`;
     } else if (step.type === 'question') {
       this._renderQuestion(step, container);
     }
+  },
+
+  _renderOutline(chapter) {
+    const completed = Tracker.getStepProgress(chapter.id).completed;
+    const outline = document.getElementById('lesson-outline');
+    outline.innerHTML = chapter.steps.map((step, index) => {
+      const disabled = index > completed;
+      return `<button class="outline-step" data-step="${index}" ${disabled ? 'disabled' : ''} ${index === this._currentStep ? 'aria-current="step"' : ''}>${index + 1}. ${step.title}</button>`;
+    }).join('');
+    outline.querySelectorAll('button:not(:disabled)').forEach(button => {
+      button.addEventListener('click', () => {
+        this._currentStep = Number(button.dataset.step);
+        this._renderStep();
+        document.getElementById('step-content').focus();
+      });
+    });
   },
 
   _renderQuestion(step, container) {
@@ -204,6 +229,7 @@ const App = {
 
     this._currentStep++;
     this._renderStep();
+    document.getElementById('step-content').focus();
   },
 
   _prevStep() {
@@ -253,6 +279,10 @@ const App = {
     overlay.querySelector('#reset-cancel-btn').addEventListener('click', () => overlay.remove());
     overlay.querySelector('#reset-confirm-btn').addEventListener('click', () => {
       Tracker.resetAll();
+      CHAPTERS.forEach(chapter => chapter.steps.forEach(step => {
+        delete step._answered;
+        delete step._chosen;
+      }));
       overlay.remove();
       this.showDashboard();
     });
