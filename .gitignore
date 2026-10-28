@@ -6,3 +6,10 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+*.class
+.venv/
+node_modules/
+target/
+build/
+examples/expense-report/out/

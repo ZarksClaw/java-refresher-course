@@ -232,3 +232,33 @@ code, pre { font-family: var(--mono); }
 .reset-modal h3 { margin-bottom: .5rem; }
 .reset-modal p { color: var(--text-muted); margin-bottom: 1.25rem; font-size: .9rem; }
 .reset-modal .actions { display: flex; gap: .5rem; justify-content: center; }
+
+/* Course navigation and expanded lessons */
+.course-guide { padding: 1.25rem; margin-bottom: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.course-guide h2 { font-size: 1.15rem; margin-bottom: .5rem; }
+.course-guide p { margin-bottom: .75rem; }
+.course-guide label { display: block; font-weight: 600; margin-top: .75rem; }
+.course-guide input, .course-guide select { width: 100%; padding: .65rem; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); font: inherit; }
+#course-stats, #search-status, .card-meta, .reference { font-size: .85rem; color: var(--text-muted); }
+#search-status { margin-bottom: .75rem; }
+button.chapter-card { text-align: left; color: var(--text); font: inherit; width: 100%; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+#lesson-outline { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+.outline-step { padding: .4rem .6rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: var(--radius-sm); font: inherit; font-size: .8rem; cursor: pointer; }
+.outline-step:disabled { opacity: .5; cursor: not-allowed; }
+.outline-step[aria-current] { border-color: var(--primary); background: var(--primary-light); font-weight: 700; }
+.learning-goals { background: var(--primary-light); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; }
+.learning-goals h3 { font-size: 1rem; }
+.learning-goals ul { margin-left: 1.25rem; }
+.lesson-content h3, .lesson-content h4 { margin-bottom: .75rem; }
+.lesson-content .code-block { white-space: pre; }
+.lesson-content details { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; margin: 1rem 0; }
+.lesson-content summary { cursor: pointer; font-weight: 600; }
+.takeaway { border-left: 3px solid var(--primary); padding: .75rem; background: var(--primary-light); }
+.reference { margin-top: 1.5rem; }
+#storage-notice { padding: .75rem; background: var(--warning-light); border-radius: var(--radius-sm); margin-bottom: 1rem; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+.chapter-card .card-desc, .chapter-card .card-meta, .chapter-card .card-bar { display: block; }
+.chapter-card .card-bar-fill { display: block; }

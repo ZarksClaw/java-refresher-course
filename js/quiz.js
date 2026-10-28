@@ -57,6 +57,7 @@ const Quiz = {
   },
 
   _submit(chapter) {
+    if (this._submitted) return;
     const quizQuestions = chapter.quiz || [];
     let allAnswered = true;
 
@@ -109,7 +110,7 @@ const Quiz = {
         <p>You scored <span class="result-score ${passed ? 'pass' : 'fail'}">${correct}/${total}</span></p>
         <p style="color:var(--text-muted);margin-bottom:1.5rem;">${passed ? 'You passed the knowledge check!' : 'You need ' + (Math.ceil(total * 0.6) - correct) + ' more correct to pass.'}</p>
         <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
-          ${passed ? `<button id="quiz-done-btn" class="btn btn-primary">Back to Dashboard</button>` : `<button id="quiz-retry-btn" class="btn btn-primary">Retry Quiz</button>`}
+          ${passed ? `<button id="quiz-done-btn" class="btn btn-primary">Back to Dashboard</button>` : ''}<button id="quiz-retry-btn" class="btn btn-ghost">Retry Quiz</button>
         </div>
       </div>
     `;

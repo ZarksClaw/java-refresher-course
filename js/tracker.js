@@ -1,98 +1,101 @@
 const STORAGE_KEY = 'java-refresher-progress';
 
 const Tracker = {
+  _memory: {},
+  storageAvailable: true,
+
   _load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
+    let data = this._memory;
+    if (this.storageAvailable) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        data = raw ? JSON.parse(raw) : this._memory;
+      } catch {
+        // A malformed value or unavailable storage starts from session state.
+      }
     }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) data = {};
+    const normalized = {};
+    for (const chapter of CHAPTERS) {
+      const saved = data[chapter.id] || {};
+      const sameRevision = saved.revision === chapter.revision;
+      normalized[chapter.id] = {
+        revision: chapter.revision,
+        stepsCompleted: Number.isInteger(saved.stepsCompleted)
+          ? Math.max(0, Math.min(saved.stepsCompleted, chapter.steps.length)) : 0,
+        // Expanded quizzes must be passed again; existing lesson progress is retained.
+        quizPassed: sameRevision && saved.quizPassed === true,
+        quizBest: sameRevision && Number.isInteger(saved.quizBest)
+          ? Math.max(0, Math.min(saved.quizBest, chapter.quiz.length)) : 0
+      };
+    }
+    return normalized;
   },
 
   _save(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    this._memory = data;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      this.storageAvailable = false;
+      const notice = document.getElementById('storage-notice');
+      if (notice) notice.hidden = false;
+    }
   },
 
   _getChapter(chapterId) {
-    const data = this._load();
-    if (!data[chapterId]) {
-      data[chapterId] = { stepsCompleted: 0, quizPassed: false, quizBest: 0 };
-      this._save(data);
-    }
-    return data[chapterId];
+    return this._load()[chapterId];
   },
 
   markStepCompleted(chapterId, stepIndex) {
-    const data = this._load();
-    if (!data[chapterId]) {
-      data[chapterId] = { stepsCompleted: 0, quizPassed: false, quizBest: 0 };
-    }
     const chapter = CHAPTERS.find(c => c.id === chapterId);
-    const total = chapter ? chapter.steps.length : 0;
-    data[chapterId].stepsCompleted = Math.min(
-      Math.max(data[chapterId].stepsCompleted || 0, stepIndex + 1),
-      total
-    );
+    if (!chapter || !Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex >= chapter.steps.length) return;
+    const data = this._load();
+    // Only the current unlocked step (or an earlier one) can be completed.
+    if (stepIndex > data[chapterId].stepsCompleted) return;
+    data[chapterId].stepsCompleted = Math.max(data[chapterId].stepsCompleted, stepIndex + 1);
     this._save(data);
   },
 
   getStepProgress(chapterId) {
-    const ch = this._getChapter(chapterId);
     const chapter = CHAPTERS.find(c => c.id === chapterId);
-    const total = chapter ? chapter.steps.length : 0;
-    return { completed: ch.stepsCompleted || 0, total };
+    return { completed: this._getChapter(chapterId)?.stepsCompleted || 0, total: chapter?.steps.length || 0 };
   },
 
   isChapterComplete(chapterId) {
-    const ch = this._getChapter(chapterId);
-    const chapter = CHAPTERS.find(c => c.id === chapterId);
-    if (!chapter) return false;
-    const allStepsDone = (ch.stepsCompleted || 0) >= chapter.steps.length;
-    return allStepsDone && ch.quizPassed;
+    return this.isStepsComplete(chapterId) && this.getQuizInfo(chapterId).passed;
   },
 
   isStepsComplete(chapterId) {
-    const ch = this._getChapter(chapterId);
-    const chapter = CHAPTERS.find(c => c.id === chapterId);
-    if (!chapter) return false;
-    return (ch.stepsCompleted || 0) >= chapter.steps.length;
+    const progress = this.getStepProgress(chapterId);
+    return progress.total > 0 && progress.completed >= progress.total;
   },
 
   markQuizPassed(chapterId, score) {
+    const chapter = CHAPTERS.find(c => c.id === chapterId);
+    if (!chapter || !this.isStepsComplete(chapterId) || !Number.isInteger(score) || score < Math.ceil(chapter.quiz.length * 0.6) || score > chapter.quiz.length) return;
     const data = this._load();
-    if (!data[chapterId]) {
-      data[chapterId] = { stepsCompleted: 0, quizPassed: false, quizBest: 0 };
-    }
     data[chapterId].quizPassed = true;
-    data[chapterId].quizBest = Math.max(data[chapterId].quizBest || 0, score);
-    data[chapterId].stepsCompleted = CHAPTERS.find(c => c.id === chapterId)?.steps.length || 0;
+    data[chapterId].quizBest = Math.max(data[chapterId].quizBest, score);
     this._save(data);
   },
 
   getQuizInfo(chapterId) {
-    const ch = this._getChapter(chapterId);
-    return { passed: ch.quizPassed, best: ch.quizBest || 0 };
+    const chapter = this._getChapter(chapterId);
+    return { passed: chapter?.quizPassed || false, best: chapter?.quizBest || 0 };
   },
 
   getOverallProgress() {
-    let completed = 0;
-    for (const ch of CHAPTERS) {
-      if (this.isChapterComplete(ch.id)) completed++;
-    }
-    return { completed, total: CHAPTERS.length };
+    return { completed: CHAPTERS.filter(ch => this.isChapterComplete(ch.id)).length, total: CHAPTERS.length };
   },
 
   getStatus(chapterId) {
-    const ch = this._getChapter(chapterId);
-    const chapter = CHAPTERS.find(c => c.id === chapterId);
-    if (!chapter) return 'new';
     if (this.isChapterComplete(chapterId)) return 'done';
-    if ((ch.stepsCompleted || 0) > 0 || ch.quizPassed) return 'in-progress';
-    return 'new';
+    return this.getStepProgress(chapterId).completed > 0 ? 'in-progress' : 'new';
   },
 
   resetAll() {
-    localStorage.removeItem(STORAGE_KEY);
+    // Saving an empty object also works when storage is unavailable.
+    this._save({});
   }
 };

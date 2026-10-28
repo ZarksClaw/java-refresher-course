@@ -18,7 +18,7 @@ const CHAPTERS = [
   <li><strong>long</strong> (64-bit, suffix <code>L</code>)</li>
   <li><strong>float</strong> (32-bit, suffix <code>f</code>)</li>
   <li><strong>double</strong> (64-bit)</li>
-  <li><strong>char</strong> (16-bit Unicode)</li>
+  <li><strong>char</strong> (one 16-bit UTF-16 code unit; not always a whole Unicode character)</li>
   <li><strong>boolean</strong> (true / false)</li>
 </ul>
 <p>Everything else is an <strong>object</strong> — including arrays and <code>String</code>.</p>`
@@ -36,7 +36,7 @@ const CHAPTERS = [
 <div class="code-block">
 <span class="type">int</span> x;          <span class="comment">// class field → defaults to 0</span>
 <span class="keyword">void</span> foo() {
-  <span class="type">int</span> y;        <span class="comment">// local variable → compiler error!</span>
+  <span class="type">int</span> y;        <span class="comment">// declaration is legal; reading y before assignment is an error</span>
   <span class="type">int</span> z = <span class="number">42</span>;   <span class="comment">// OK</span>
 }
 </div>`
@@ -46,11 +46,11 @@ const CHAPTERS = [
         question: "What does <code>\"Java\".toUpperCase()</code> return?",
         options: ["\"JAVA\"", "\"java\"", "\"Java\"", "\"JAVa\""],
         correct: 0,
-        explanation: "String is immutable in Java. <code>toUpperCase()</code> returns a <strong>new</strong> String with the content converted to uppercase. The original is unchanged."
+        explanation: "String is immutable in Java. <code>toUpperCase()</code> returns the uppercase value without changing the original; it may reuse an existing String when no change is needed. The original is unchanged."
       },
       {
         type: "lesson",
-        content: `<p><strong>String immutability</strong>: once created, a String cannot be changed. Every "modification" produces a new String object. This enables string pooling and thread safety.</p>
+        content: `<p><strong>String immutability</strong>: once created, a String cannot be changed. Operations cannot mutate the original value; an operation may return the same instance if no change is needed. This enables string pooling and thread safety.</p>
 <p><strong>Control flow</strong> basics:</p>
 <ul>
   <li><code>if / else if / else</code> — conditional branching</li>
@@ -62,7 +62,7 @@ const CHAPTERS = [
       },
       {
         type: "question",
-        question: "What happens if you omit <code>break</code> in a <code>switch</code> case?",
+        question: "In a traditional colon-style switch statement, what happens when a case finishes normally without break?",
         options: [
           "The code falls through to the next case",
           "The compiler throws an error",
@@ -129,7 +129,7 @@ const CHAPTERS = [
           "Every class in the universe"
         ],
         correct: 2,
-        explanation: "protected allows access within the same package AND by subclasses in any package."
+        explanation: "protected permits same-package access and subclass access. Across packages, instance-member access has additional receiver restrictions; a subclass cannot use an arbitrary superclass instance."
       },
       {
         type: "lesson",
@@ -137,7 +137,7 @@ const CHAPTERS = [
 <ul>
   <li>If you don't define any constructor, Java provides a <strong>no-arg default constructor</strong></li>
   <li>If you define <em>any</em> constructor, the default is <em>not</em> provided</li>
-  <li><code>super()</code> must be the first statement in a constructor to call the parent constructor</li>
+  <li>On this course’s Java 21 baseline, an explicit <code>super(...)</code> or <code>this(...)</code> invocation must come first</li>
   <li><code>this()</code> calls another constructor in the same class</li>
 </ul>`
       },
@@ -151,7 +151,7 @@ const CHAPTERS = [
           "The subclass inherits the parent's constructor"
         ],
         correct: 0,
-        explanation: "If no <code>super()</code> call is present, the compiler inserts <code>super()</code> automatically — which calls the parent's no-arg constructor."
+        explanation: "If neither this(...) nor super(...) is explicit, Java inserts super(). Compilation succeeds only if the superclass has an accessible no-argument constructor."
         },
         {
           type: "lesson",
@@ -202,7 +202,7 @@ const CHAPTERS = [
       quiz: [
         { question: "Which keyword is used to inherit a class?", options: ["implements", "extends", "inherits", "super"], correct: 1, explanation: "extends is used for class inheritance. implements is for interfaces." },
         { question: "Can you override a private method?", options: ["Yes", "No — private methods are not inherited", "Yes, but only in the same class", "Only with @Override annotation"], correct: 1, explanation: "Private methods are not visible to subclasses, so they cannot be overridden." },
-        { question: "What does <code>@Override</code> do?", options: ["Makes the method run faster", "Tells the compiler to check that you're actually overriding a superclass method", "Makes the method final", "Removes the parent's method"], correct: 1, explanation: "@Override is an annotation that causes a compilation error if the method doesn't actually override a parent method." },
+        { question: "What does <code>@Override</code> do?", options: ["Makes the method run faster", "Tells the compiler to check that the method implements an interface method or overrides an inherited method", "Makes the method final", "Removes the parent's method"], correct: 1, explanation: "@Override is an annotation that causes a compilation error if the method does not override or implement an appropriate supertype method." },
         { question: "Which access modifier allows access from anywhere?", options: ["private", "protected", "default", "public"], correct: 3, explanation: "public is the least restrictive — accessible from any class in any package." },
         { question: "A class declared <code>final</code> cannot:", options: ["Be instantiated", "Be extended", "Implement interfaces", "Have fields"], correct: 1, explanation: "final on a class prevents subclassing. final on a method prevents overriding." }
       ]
@@ -243,7 +243,7 @@ const CHAPTERS = [
     <li>Uses <code>equals()</code> to find the exact key within the bucket</li>
     <li>If two objects are equal, they <strong>must</strong> have the same hashCode</li>
     <li>If two objects are not equal, they <em>may</em> have the same hashCode (collision)</li>
-    <li>From Java 8: buckets with many collisions switch from linked list to balanced tree for performance</li>
+    <li>From Java 8: heavily collided buckets may become trees when implementation thresholds and table capacity permit</li>
   </ul>`
       },
       {
@@ -271,7 +271,7 @@ const CHAPTERS = [
   <span class="keyword">class</span> <span class="type">Person</span> <span class="keyword">implements</span> <span class="type">Comparable</span>&lt;<span class="type">Person</span>&gt; { ... }
   
   <span class="comment">// Comparator (lambda)</span>
-  list.sort((a, b) -> a.age() - b.age());
+  list.sort(Comparator.comparingInt(Person::age)); // avoids subtraction overflow
   </div>`
       },
       {
@@ -291,7 +291,7 @@ const CHAPTERS = [
         content: `<p><strong>Choosing the right collection:</strong></p>
   <ul>
     <li>Need fast random access? → <code>ArrayList</code></li>
-    <li>Need fast inserts/deletes in the middle? → <code>LinkedList</code></li>
+    <li>Already positioned at a linked-list iterator and need local insertion/removal? → <code>LinkedList</code>; finding the position is still O(n)</li>
     <li>Need unique elements? → <code>HashSet</code> (or <code>TreeSet</code> if sorted)</li>
     <li>Need key-value lookups? → <code>HashMap</code> (or <code>TreeMap</code> if sorted)</li>
     <li>Need thread safety? → <code>ConcurrentHashMap</code>, <code>CopyOnWriteArrayList</code></li>
@@ -309,7 +309,7 @@ const CHAPTERS = [
       { question: "Which interface does Map extend?", options: ["Collection", "Iterable", "Neither — Map is separate", "Set"], correct: 2, explanation: "Map does NOT extend Collection. It's a separate top-level interface in the collections framework." },
       { question: "What does <code>Set.add()</code> return if the element already exists?", options: ["true", "false", "null", "Throws exception"], correct: 1, explanation: "Set.add() returns true if the element was added (was not already present), false otherwise." },
       { question: "Which List implementation is best for frequent insertions/removals at the beginning?", options: ["ArrayList", "LinkedList", "Vector", "Stack"], correct: 1, explanation: "LinkedList offers O(1) insertion/removal at both ends. ArrayList would be O(n) shifting elements." },
-      { question: "What must you override to use an object as a key in a HashMap correctly?", options: ["equals() only", "hashCode() only", "Both equals() and hashCode()", "toString()"], correct: 2, explanation: "Both must be overridden consistently for HashMap to work correctly." },
+      { question: "When implementing value-based equality for a HashMap key, which pair must stay consistent?", options: ["equals() only", "hashCode() only", "Both equals() and hashCode()", "toString()"], correct: 2, explanation: "Value-based equals and hashCode must be consistent. Object’s inherited identity-based pair is also a valid contract when identity semantics are intended." },
       { question: "Which collection maintains elements in their natural sorted order?", options: ["HashSet", "ArrayList", "TreeSet", "LinkedList"], correct: 2, explanation: "TreeSet keeps elements sorted according to their natural ordering (Comparable) or a provided Comparator." }
     ]
   },
@@ -345,7 +345,7 @@ const CHAPTERS = [
           "An annotation that removes type checks"
         ],
         correct: 1,
-        explanation: "Type erasure means generic type information is removed at compile time. <code>List&lt;String&gt;</code> becomes just <code>List</code> at runtime."
+        explanation: "Type erasure means generic types are erased for execution (generic signatures can still be retained as metadata). <code>List&lt;String&gt;</code> becomes just <code>List</code> at runtime."
       },
       {
         type: "lesson",
@@ -367,7 +367,7 @@ const CHAPTERS = [
           "Only if you cast it"
         ],
         correct: 1,
-        explanation: "With <code>? extends Number</code>, you don't know the exact type (could be List&lt;Double&gt;). You can only read (producer). You cannot add anything except null."
+        explanation: "With <code>? extends Number</code>, you don't know the exact type (could be List&lt;Double&gt;). You cannot safely add a non-null Number because the element type is unknown. Other mutations such as clear or remove may still be supported by the list."
       },
       {
         type: "lesson",
@@ -387,9 +387,9 @@ const CHAPTERS = [
         type: "question",
         question: "Which is NOT allowed with generics?",
         options: [
-          "List<List<String>>",
+          "List&lt;List&lt;String&gt;&gt;",
           "new T() (creating an instance of type parameter)",
-          "List<? extends Number>",
+          "List&lt;? extends Number&gt;",
           "Generic interface"
         ],
         correct: 1,
@@ -400,7 +400,7 @@ const CHAPTERS = [
       { question: "What does type erasure enable?", options: ["Faster code", "Backward compatibility with pre-generics code", "Runtime type checking", "Smaller bytecode"], correct: 1, explanation: "Type erasure allows generic code to be compatible with code written before generics were introduced (Java 5)." },
       { question: "What does <code>? super Integer</code> mean?", options: ["Integer or any of its subclasses", "Integer or any of its superclasses", "Only Integer", "Any type"], correct: 1, explanation: "? super Integer is a lower bound — Integer and its supertypes (Number, Object)." },
       { question: "Can you use primitives as type arguments?", options: ["Yes", "No — must use wrapper types", "Only int and long", "Only with autoboxing"], correct: 1, explanation: "Generics work only with reference types. Use <code>Integer</code> instead of <code>int</code>." },
-      { question: "What is the erasure of <code>&lt;T extends Comparable&lt;T&gt;&gt;</code>?", options: ["Object", "Comparable", "T", "Comparable<T>"], correct: 1, explanation: "The erasure is the leftmost bound — <code>Comparable</code> in this case." },
+      { question: "What is the erasure of <code>&lt;T extends Comparable&lt;T&gt;&gt;</code>?", options: ["Object", "Comparable", "T", "Comparable&lt;T&gt;"], correct: 1, explanation: "The erasure is the leftmost bound — <code>Comparable</code> in this case." },
       { question: "What does the diamond operator <code>&lt;&gt;</code> mean?", options: ["An empty generic type", "The compiler infers the type argument", "A wildcard", "Raw type"], correct: 1, explanation: "The diamond allows the compiler to infer the type argument from context." }
     ]
   },
@@ -417,11 +417,11 @@ const CHAPTERS = [
         type: "lesson",
         content: `<p>Java exceptions are objects that represent abnormal conditions. The Throwable hierarchy:</p>
   <ul>
-    <li><strong>Error</strong> — serious JVM issues (OutOfMemoryError), typically not catchable</li>
+    <li><strong>Error</strong> — serious conditions (OutOfMemoryError); catchable in Java, but normally not something application code can safely recover from</li>
     <li><strong>Exception</strong> — conditions a program should handle</li>
     <li><strong>RuntimeException</strong> — unchecked exceptions (NullPointerException, IllegalArgumentException)</li>
   </ul>
-  <p><strong>Checked</strong> exceptions (not RuntimeException) must be either caught or declared with <code>throws</code>.</p>`
+  <p><strong>Checked</strong> exceptions (Throwable subclasses other than RuntimeException, Error, and their subclasses) must be either caught or declared with <code>throws</code>.</p>`
       },
       {
         type: "question",
@@ -444,7 +444,7 @@ const CHAPTERS = [
     <span class="comment">// always executes (even with return)</span>
   }
   </div>
-  <p><code>finally</code> always runs — even if there's a <code>return</code> in try or catch, unless the JVM crashes.</p>`
+  <p><code>finally</code> runs during normal completion and stack unwinding, including return. Process termination, Runtime.halt, or a JVM crash can bypass it. Avoid return in finally because it can hide failures.</p>`
       },
       {
         type: "question",
@@ -534,10 +534,10 @@ const CHAPTERS = [
       },
       {
         type: "question",
-        question: "Which class would you use to read a text file with a specific charset?",
-        options: ["FileInputStream", "FileReader", "InputStreamReader wrapping FileInputStream", "DataInputStream"],
+        question: "Which listed construction explicitly bridges a byte stream to characters with a chosen charset?",
+        options: ["FileInputStream", "FileReader", "InputStreamReader(FileInputStream, Charset)", "DataInputStream"],
         correct: 2,
-        explanation: "FileReader uses the platform default charset. To specify a charset, use InputStreamReader(FileInputStream, Charset)."
+        explanation: "InputStreamReader(InputStream, Charset) is a byte-to-text bridge. Since Java 11, FileReader also has charset-taking constructors; the no-charset overload uses the default charset."
       },
       {
         type: "lesson",
@@ -568,12 +568,12 @@ const CHAPTERS = [
         question: "What does <code>Files.walk(path)</code> return?",
         options: [
           "A List of files",
-          "A Stream<Path> of the file tree",
+          "A Stream&lt;Path&gt; of the file tree",
           "A DirectoryStream",
           "A BufferedReader"
         ],
         correct: 1,
-        explanation: "Files.walk() returns a Stream<Path> that lazily traverses the directory tree depth-first."
+        explanation: "Files.walk() returns a lazy depth-first Stream&lt;Path&gt;. Close this resource-owning stream with try-with-resources."
       },
       {
         type: "lesson",
@@ -582,7 +582,8 @@ const CHAPTERS = [
     <li>Implement <code>Serializable</code> (marker interface)</li>
     <li>Use <code>ObjectOutputStream</code> / <code>ObjectInputStream</code></li>
     <li><code>transient</code> fields are not serialized</li>
-    <li><code>serialVersionUID</code> helps with versioning</li>
+    <li><code>serialVersionUID</code> helps with compatibility, not security</li>
+    <li>Do not deserialize untrusted Java object streams; prefer a constrained data format with validation.</li>
   </ul>`
       },
       {
@@ -601,7 +602,7 @@ const CHAPTERS = [
     quiz: [
       { question: "Which class reads primitive types (int, double) from an input stream?", options: ["BufferedReader", "DataInputStream", "ObjectInputStream", "FileReader"], correct: 1, explanation: "DataInputStream reads primitive Java types in a portable way from an underlying InputStream." },
       { question: "What is the difference between <code>File</code> and <code>Path</code>?", options: ["Same thing, different name", "File is older (Java 1.0); Path is newer (Java 7) with better API", "File is abstract; Path is concrete", "Path can't read files"], correct: 1, explanation: "java.io.File is the old API. java.nio.file.Path (with Files helper) is the modern NIO.2 replacement." },
-      { question: "Which method reads all lines from a file into a List in one call?", options: ["Files.lines()", "Files.readAllLines()", "Files.readString()", "Files.list()"], correct: 1, explanation: "Files.readAllLines() reads all lines into a List<String>. Files.lines() returns a Stream." },
+      { question: "Which method reads all lines from a file into a List in one call?", options: ["Files.lines()", "Files.readAllLines()", "Files.readString()", "Files.list()"], correct: 1, explanation: "Files.readAllLines() reads all lines into a List&lt;String&gt;. Files.lines() returns a Stream." },
       { question: "What is the purpose of <code>serialVersionUID</code>?", options: ["Encrypts the serialized data", "Identifies the class version for deserialization compatibility", "Stores the object's hashCode", "Speeds up serialization"], correct: 1, explanation: "serialVersionUID is used during deserialization to verify that the sender and receiver have loaded compatible classes." },
       { question: "Which of these is NOT a NIO.2 class?", options: ["Path", "Files", "FileInputStream", "Paths"], correct: 2, explanation: "FileInputStream is from the older java.io package, not NIO.2 (java.nio.file)." }
     ]
@@ -660,14 +661,14 @@ const CHAPTERS = [
         question: "Which functional interface would you use to filter a list (return true/false)?",
         options: ["Function", "Consumer", "Predicate", "Supplier"],
         correct: 2,
-        explanation: "Predicate<T> takes an input and returns boolean — perfect for filtering."
+        explanation: "Predicate&lt;T&gt; takes an input and returns boolean — perfect for filtering."
       },
       {
         type: "lesson",
         content: `<p><strong>Method references</strong> — even shorter syntax for lambdas that just call a method:</p>
   <div class="code-block">
   list.forEach(item -> System.out.println(item));
-  list.forEach(System.out::println);           <span class="comment">// static method reference</span>
+  list.forEach(System.out::println);           <span class="comment">// bound instance method reference: println belongs to System.out</span>
   
   list.stream().map(item -> item.toUpperCase());
   list.stream().map(String::toUpperCase);       <span class="comment">// instance method on parameter</span>
@@ -693,12 +694,12 @@ const CHAPTERS = [
         content: `<p><strong>Variable capture</strong>: lambdas can capture (use) variables from the enclosing scope.</p>
   <ul>
     <li>Must be <strong>effectively final</strong> — not reassigned after initialization</li>
-    <li>Same rule as anonymous inner classes (Java 8 relaxed from explicitly final to effectively final)</li>
+    <li>This restriction is about rebinding the variable, not mutation of a referenced object. Same rule as anonymous inner classes (Java 8 relaxed from explicitly final to effectively final)</li>
   </ul>`
       },
       {
         type: "question",
-        question: "Can a lambda modify a local variable from the enclosing scope?",
+        question: "Can a lambda reassign a captured local variable?",
         options: [
           "Yes, always",
           "No — the variable must be effectively final",
@@ -713,8 +714,8 @@ const CHAPTERS = [
       { question: "What annotation is commonly used to mark functional interfaces?", options: ["@Override", "@FunctionalInterface", "@SAM", "@Lambda"], correct: 1, explanation: "@FunctionalInterface is optional but recommended — the compiler checks it's a valid functional interface." },
       { question: "How many abstract methods can a functional interface have?", options: ["Any number", "Exactly one", "At least one", "Zero"], correct: 1, explanation: "A functional interface must have exactly one abstract method (plus any number of default/static methods)." },
       { question: "Which is a valid lambda expression?", options: ["() -> 42", "int x -> x + 1", "(int x, y) -> x + y", "x, y -> x + y"], correct: 0, explanation: "() -> 42 is valid: no parameters, returns 42. Others have syntax errors (missing parentheses, missing type)." },
-      { question: "What does <code>Supplier&lt;String&gt;</code> do?", options: ["Takes a String, returns nothing", "Takes nothing, returns a String", "Takes and returns a String", "Tests a String condition"], correct: 1, explanation: "Supplier<T> represents a function that supplies a value: no input, one output." },
-      { question: "What is the lambda equivalent of <code>new Thread(() -> System.out.println(\"Hi\"))</code>?", options: ["Runnable lambda", "Callable lambda", "Consumer lambda", "Supplier lambda"], correct: 0, explanation: "Thread takes a Runnable — which is a functional interface with <code>void run()</code>." }
+      { question: "What does <code>Supplier&lt;String&gt;</code> do?", options: ["Takes a String, returns nothing", "Takes nothing, returns a String", "Takes and returns a String", "Tests a String condition"], correct: 1, explanation: "Supplier&lt;T&gt; represents a function that supplies a value: no input, one output." },
+      { question: "Which functional interface is targeted by the lambda passed to <code>new Thread(() -> System.out.println(\"Hi\"))</code>?", options: ["Runnable lambda", "Callable lambda", "Consumer lambda", "Supplier lambda"], correct: 0, explanation: "Thread takes a Runnable — which is a functional interface with <code>void run()</code>." }
     ]
   },
 
@@ -821,7 +822,7 @@ const CHAPTERS = [
         type: "lesson",
         content: `<p><strong>Optional</strong> — a container that may or may not contain a value. It helps avoid NullPointerException.</p>
   <div class="code-block">
-  <span class="type">Optional</span>&lt;<span class="type">String</span>&gt; result = findUser(id);     <span class="comment">// may be empty</span>
+  <span class="type">Optional</span>&lt;<span class="type">User</span>&gt; result = findUser(id);     <span class="comment">// may be empty</span>
   result.map(User::getName).orElse(<span class="string">"Unknown"</span>);
   result.orElseThrow(() -> <span class="keyword">new</span> <span class="type">NotFoundException</span>());
   </div>
@@ -842,9 +843,9 @@ const CHAPTERS = [
     ],
     quiz: [
       { question: "Which is a terminal operation?", options: ["filter", "map", "collect", "distinct"], correct: 2, explanation: "collect is terminal. filter, map, and distinct are intermediate (lazy)." },
-      { question: "What does <code>Stream.of(1,2,3).map(i -> i * 2).count()</code> return?", options: ["2", "3", "6", "12"], correct: 1, explanation: "count() returns the number of elements — 3 in this case. The map transforms them but doesn't change the count." },
+      { question: "What does <code>Stream.of(1,2,3).map(i -> i * 2).count()</code> return?", options: ["2", "3", "6", "12"], correct: 1, explanation: "count() returns the number of elements — 3 in this case. map does not change the count. A sized pipeline may optimize away the mapping, so never rely on map side effects here." },
       { question: "What is the identity value for <code>reduce</code> in multiplication?", options: ["0", "1", "-1", "Depends on the type"], correct: 1, explanation: "The identity for multiplication is 1 (x * 1 = x). An identity must satisfy: accumulator(identity, x) = x." },
-      { question: "Which collector would you use to separate elements into two groups (true/false)?", options: ["groupingBy", "partitioningBy", "toMap", "teeing"], correct: 1, explanation: "partitioningBy splits into a Map<Boolean, List> based on a Predicate." },
+      { question: "Which collector would you use to separate elements into two groups (true/false)?", options: ["groupingBy", "partitioningBy", "toMap", "teeing"], correct: 1, explanation: "partitioningBy splits into a Map&lt;Boolean, List&gt; based on a Predicate." },
       { question: "How do you get a parallel stream from a list?", options: ["list.parallel()", "list.parallelStream()", "Stream.parallel(list)", "list.stream(true)"], correct: 1, explanation: "Collection.parallelStream() creates a parallel stream. Stream.parallel() converts an existing stream to parallel." }
     ]
   },
@@ -884,14 +885,14 @@ const CHAPTERS = [
           "Runnable is an interface; Callable is a class"
         ],
         correct: 1,
-        explanation: "Callable<V> returns a value and can throw checked exceptions. Runnable's run() returns void and cannot throw checked exceptions."
+        explanation: "Callable&lt;V&gt; returns a value and can throw checked exceptions. Runnable's run() returns void and cannot throw checked exceptions."
       },
       {
         type: "lesson",
         content: `<p><strong>Thread safety</strong> — preventing data races and inconsistent state:</p>
   <ul>
     <li><code>synchronized</code> — intrinsic locks (mutual exclusion)</li>
-    <li><code>volatile</code> — ensures visibility across threads (no caching)</li>
+    <li><code>volatile</code> — provides visibility and ordering guarantees, not atomic compound updates</li>
     <li><code>Lock</code> / <code>ReentrantLock</code> — more flexible than synchronized</li>
   </ul>
   <div class="code-block">
@@ -967,7 +968,7 @@ const CHAPTERS = [
     ],
     quiz: [
       { question: "What problem does <code>synchronized</code> solve?", options: ["Visibility only", "Atomicity only", "Both visibility and atomicity", "Neither"], correct: 2, explanation: "synchronized provides both mutual exclusion (atomicity) and a happens-before guarantee (visibility)." },
-      { question: "Which ExecutorService uses an unbounded queue with a fixed number of threads?", options: ["newCachedThreadPool", "newFixedThreadPool", "newSingleThreadExecutor", "newScheduledThreadPool"], correct: 1, explanation: "newFixedThreadPool uses a fixed number of threads and an unbounded LinkedBlockingQueue." },
+      { question: "Which factory call creates exactly four platform workers with an unbounded work queue?", options: ["newCachedThreadPool()", "newFixedThreadPool(4)", "newSingleThreadExecutor()", "newScheduledThreadPool(4)"], correct: 1, explanation: "newFixedThreadPool uses a fixed number of threads and an unbounded LinkedBlockingQueue." },
       { question: "What does <code>Future.get()</code> do?", options: ["Returns immediately", "Blocks until the result is available", "Cancels the task", "Returns null if not done"], correct: 1, explanation: "get() blocks until the computation completes, then returns the result (or throws if exceptional)." },
       { question: "Which concurrent collection is best for a read-heavy, write-rarely scenario with iteration?", options: ["ConcurrentHashMap", "CopyOnWriteArrayList", "Collections.synchronizedList", "Hashtable"], correct: 1, explanation: "CopyOnWriteArrayList is ideal when traversals vastly outnumber mutations — iteration uses a snapshot of the underlying array." },
       { question: "What is a deadlock?", options: ["A thread that never starts", "Two+ threads waiting forever for locks each other holds", "A synchronized block with no exit", "A thread that executes too slowly"], correct: 1, explanation: "Deadlock occurs when each thread holds a lock the other needs and neither releases." }
@@ -1003,7 +1004,7 @@ const CHAPTERS = [
       },
       {
         type: "lesson",
-        content: `<p><strong>Records</strong> (Java 16) — transparent carriers for immutable data. Compiler generates constructor, accessors, equals, hashCode, toString:</p>
+        content: `<p><strong>Records</strong> (Java 16) — transparent data carriers with final component references (shallow immutability). Compiler generates constructor, accessors, equals, hashCode, toString:</p>
   <div class="code-block">
   <span class="keyword">record</span> <span class="type">Point</span>(<span class="type">int</span> x, <span class="type">int</span> y) { }
   
@@ -1058,15 +1059,15 @@ const CHAPTERS = [
       },
       {
         type: "question",
-        question: "What does a switch <strong>expression</strong> (vs statement) guarantee?",
+        question: "What is true of an exhaustive switch expression written using arrow rules?",
         options: [
-          "It always returns a value and must be exhaustive",
+          "Each selected path produces a value or throws, and the switch is exhaustive",
           "It doesn't need break statements",
           "It only works with enums",
           "Both A and B"
         ],
         correct: 3,
-        explanation: "Switch expressions always produce a value, must be exhaustive (cover all cases), and don't fall through (no break needed)."
+        explanation: "A switch expression must be exhaustive and every selected path must yield a value or throw. Arrow rules do not fall through; colon-style switch expressions can still fall through and use yield."
       },
       {
         type: "lesson",
@@ -1080,11 +1081,11 @@ const CHAPTERS = [
     &lt;/html&gt;
     """</span>;
   </div>
-  <p><strong>Virtual threads</strong> (Java 21 — preview in 19, 20) — lightweight threads managed by the JVM, allowing millions of concurrent tasks with simple thread-per-request code.</p>`
+  <p><strong>Virtual threads</strong> (Java 21 — preview in 19, 20) — lightweight threads managed by the JVM, supporting many concurrent blocking I/O tasks, subject to resource limits with simple thread-per-request code.</p>`
       },
       {
         type: "question",
-        question: "What feature of Java 21 enables millions of concurrent threads?",
+        question: "What feature of Java 21 supports large numbers of lightweight blocking I/O tasks?",
         options: ["Records", "Sealed classes", "Virtual threads", "Pattern matching"],
         correct: 2,
         explanation: "Virtual threads (Project Loom) are lightweight JVM-managed threads that allow high-throughput concurrent applications without complex async code."
@@ -1115,20 +1116,20 @@ const CHAPTERS = [
     <li><strong>Auto-configuration</strong> — automatically configures beans based on dependencies on the classpath</li>
     <li><strong>Starter POMs</strong> — pre-packaged dependency groups (<code>spring-boot-starter-web</code>, <code>spring-boot-starter-data-jpa</code>)</li>
     <li><strong>Embedded server</strong> — Tomcat, Jetty, or Undertow (no WAR deployment needed)</li>
-    <li><strong>@SpringBootApplication</strong> — combines @Configuration, @EnableAutoConfiguration, @ComponentScan</li>
+    <li><strong>@SpringBootApplication</strong> — combines @SpringBootConfiguration, @EnableAutoConfiguration, @ComponentScan</li>
   </ul>`
       },
       {
         type: "question",
-        question: "What does <code>@SpringBootApplication</code> combine?",
+        question: "Which annotations are directly declared on <code>@SpringBootApplication</code>?",
         options: [
           "@Configuration + @Bean + @Autowired",
           "@Configuration + @EnableAutoConfiguration + @ComponentScan",
           "@Controller + @RequestMapping + @ResponseBody",
           "@SpringBootConfiguration + @EnableAutoConfiguration + @ComponentScan"
         ],
-        correct: 1,
-        explanation: "@SpringBootApplication is a convenience annotation that combines @Configuration, @EnableAutoConfiguration, and @ComponentScan."
+        correct: 3,
+        explanation: "The direct annotations are @SpringBootConfiguration, @EnableAutoConfiguration, and @ComponentScan. @SpringBootConfiguration is itself meta-annotated with @Configuration."
       },
       {
         type: "lesson",
@@ -1154,7 +1155,7 @@ const CHAPTERS = [
         question: "Which injection method does Spring recommend?",
         options: ["Field injection (@Autowired on field)", "Constructor injection", "Setter injection", "Method injection"],
         correct: 1,
-        explanation: "Constructor injection is recommended — it ensures immutability, makes dependencies explicit, and works better with testing."
+        explanation: "Constructor injection is recommended — it makes required dependencies explicit and supports final dependency references, and works better with testing."
       },
       {
         type: "lesson",
@@ -1174,7 +1175,7 @@ const CHAPTERS = [
     <span class="keyword">public</span> <span class="type">User</span> getById(<span class="keyword">@PathVariable</span> <span class="type">Long</span> id) { ... }
   }
   </div>
-  <p>@RestController = @Controller + @ResponseBody (returns JSON from methods).</p>`
+  <p>@RestController combines @Controller and @ResponseBody. Message converters and content negotiation choose the response representation; DTOs are commonly serialized as JSON.</p>`
       },
       {
         type: "question",
@@ -1202,7 +1203,7 @@ const CHAPTERS = [
   app:
     greeting: "Hello!"
   </div>
-  <p><strong>@ConfigurationProperties</strong> binds properties to a POJO:</p>
+  <p><strong>@ConfigurationProperties</strong> binds typed properties. Register the type with @ConfigurationPropertiesScan or @EnableConfigurationProperties:</p>
   <div class="code-block">
   <span class="keyword">@ConfigurationProperties</span>(prefix = <span class="string">"app"</span>)
   <span class="keyword">public record</span> <span class="type">AppConfig</span>(<span class="type">String</span> greeting) { }
@@ -1214,7 +1215,7 @@ const CHAPTERS = [
   <ul>
     <li>Automatic restart when files change (fast classloader restart)</li>
     <li>LiveReload (browser auto-refresh)</li>
-    <li>Remote debugging support</li>
+    <li>Optional remote development features; never enable them casually in production</li>
   </ul>
   <p><strong>Actuator</strong> adds production-ready endpoints: <code>/health</code>, <code>/metrics</code>, <code>/info</code>, <code>/env</code>, etc.</p>`
       },
@@ -1228,12 +1229,12 @@ const CHAPTERS = [
           "spring-boot-starter-test"
         ],
         correct: 1,
-        explanation: "spring-boot-starter-actuator adds production monitoring endpoints including /health, /metrics, and /info."
+        explanation: "spring-boot-starter-actuator adds production monitoring endpoints such as health, metrics, and info. Availability and HTTP exposure depend on configuration; adding the dependency does not expose every endpoint."
       }
     ],
     quiz: [
       { question: "What is the default embedded servlet container in Spring Boot?", options: ["Jetty", "Undertow", "Tomcat", "Netty"], correct: 2, explanation: "Spring Boot uses Tomcat by default (spring-boot-starter-web includes spring-boot-starter-tomcat)." },
-      { question: "Which annotation maps HTTP POST requests to a method?", options: ["@GetMapping", "@PostMapping", "@RequestMapping(method=POST)", "Both @PostMapping and @RequestMapping(method=POST)"], correct: 3, explanation: "@PostMapping is a composed annotation for @RequestMapping(method=POST). Both work." },
+      { question: "Which annotation maps HTTP POST requests to a method?", options: ["@GetMapping", "@PostMapping", "@PutMapping", "@DeleteMapping"], correct: 1, explanation: "@PostMapping is shorthand for @RequestMapping(method = RequestMethod.POST)." },
       { question: "Where should you put configuration like database URLs?", options: ["In the Java code", "In application.properties or application.yml", "In pom.xml", "In a database"], correct: 1, explanation: "Externalize configuration to application.properties/yml files for environment-specific settings." },
       { question: "What is the purpose of @ComponentScan?", options: ["Creates components", "Scans packages for Spring-managed beans", "Scans for SQL queries", "Generates documentation"], correct: 1, explanation: "@ComponentScan tells Spring which packages to scan for annotated components (@Component, @Service, @Repository, etc.)." },
       { question: "What does spring-boot-devtools provide?", options: ["Database migration", "Automatic restart on code changes", "Security configuration", "Cloud deployment"], correct: 1, explanation: "DevTools provides automatic restart, LiveReload, and remote debugging support during development." }
